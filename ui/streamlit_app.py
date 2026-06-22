@@ -1,13 +1,37 @@
 from __future__ import annotations
 
+import asyncio
 import os
+import sys
+from pathlib import Path
 from typing import Optional
 
 import httpx
 import streamlit as st
 
 
-API_BASE = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    STREAMLIT_SECRETS = dict(st.secrets)
+except Exception:
+    STREAMLIT_SECRETS = {}
+
+for key in (
+    "OPENAI_API_KEY",
+    "OPENAI_BASE_URL",
+    "OPENAI_MODEL",
+    "DATABASE_URL",
+    "RSS_MAX_ARTICLES_PER_SOURCE",
+    "RSS_TIMEOUT_SECONDS",
+):
+    if key in STREAMLIT_SECRETS and key not in os.environ:
+        os.environ[key] = str(STREAMLIT_SECRETS[key])
+
+API_BASE = os.getenv("API_BASE_URL", "").rstrip("/")
+USE_REMOTE_API = bool(API_BASE)
 CATEGORIES = ["全部", "crypto_news", "bitcoin", "ai_news", "ai_research", "world_cup", "tech_news", "cybersecurity", "prediction_market"]
 TIME_RANGES = ["最近 6 小时", "最近 12 小时", "最近 24 小时", "最近 3 天", "最近 7 天"]
 DURATIONS = ["30秒", "1分钟", "3分钟", "5分钟", "10分钟"]
@@ -18,7 +42,75 @@ st.set_page_config(page_title="RSS 视频选题助手", page_icon="RSS", layout=
 st.title("RSS 消息流筛选 + 短视频引流文案生成")
 
 
+@st.cache_resource
+def setup_direct_mode():
+    from app.db.database import SessionLocal, init_db
+
+    init_db()
+    return SessionLocal
+
+
+def run_async(coro):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    return loop.run_until_complete(coro)
+
+
+def direct_call(path: str, payload: Optional[dict] = None, params: Optional[dict] = None) -> dict:
+    from app.services.news_service import analyze_article, fetch_and_store, top_topic_pool
+    from app.services.script_service import generate_from_article, generate_from_topic
+
+    SessionLocal = setup_direct_mode()
+    db = SessionLocal()
+    try:
+        if path == "/api/news/fetch":
+            return run_async(fetch_and_store(db))
+        if path == "/api/news/topics":
+            params = params or {}
+            return {
+                "items": top_topic_pool(
+                    db,
+                    params.get("category"),
+                    params.get("keyword"),
+                    params.get("time_range"),
+                    int(params.get("limit") or 10),
+                )
+            }
+        if path == "/api/news/analyze":
+            payload = payload or {}
+            return run_async(analyze_article(db, int(payload["article_id"]), bool(payload.get("use_llm", True))))
+        if path == "/api/script/from_article":
+            payload = payload or {}
+            return run_async(
+                generate_from_article(
+                    db,
+                    int(payload["article_id"]),
+                    payload.get("duration", "3分钟"),
+                    payload.get("platform", "抖音"),
+                    bool(payload.get("use_llm", True)),
+                )
+            )
+        if path == "/api/script/from_topic":
+            payload = payload or {}
+            return run_async(
+                generate_from_topic(
+                    db,
+                    payload.get("topic", ""),
+                    payload.get("duration", "3分钟"),
+                    payload.get("platform", "抖音"),
+                    bool(payload.get("use_llm", True)),
+                )
+            )
+        raise ValueError(f"Unsupported direct path: {path}")
+    finally:
+        db.close()
+
+
 def api_get(path: str, params: Optional[dict] = None) -> dict:
+    if not USE_REMOTE_API:
+        return direct_call(path, params=params)
     with httpx.Client(timeout=60) as client:
         response = client.get(f"{API_BASE}{path}", params=params)
         response.raise_for_status()
@@ -26,6 +118,8 @@ def api_get(path: str, params: Optional[dict] = None) -> dict:
 
 
 def api_post(path: str, payload: Optional[dict] = None) -> dict:
+    if not USE_REMOTE_API:
+        return direct_call(path, payload=payload or {})
     with httpx.Client(timeout=120) as client:
         response = client.post(f"{API_BASE}{path}", json=payload or {})
         response.raise_for_status()
