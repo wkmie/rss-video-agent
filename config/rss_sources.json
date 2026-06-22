@@ -1,0 +1,86 @@
+{
+  "rss_sources": [
+    {
+      "name": "Cointelegraph",
+      "url": "https://cointelegraph.com/rss",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "CoinDesk",
+      "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "Decrypt",
+      "url": "https://decrypt.co/feed",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "TechCrunch AI",
+      "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+      "language": "en",
+      "category": "ai_news",
+      "enabled": true
+    },
+    {
+      "name": "MIT Technology Review",
+      "url": "https://www.technologyreview.com/feed/",
+      "language": "en",
+      "category": "ai_news",
+      "enabled": true
+    },
+    {
+      "name": "BBC Football",
+      "url": "http://newsrss.bbc.co.uk/rss/sportonline_uk_edition/football/rss.xml",
+      "language": "en",
+      "category": "world_cup",
+      "enabled": true
+    },
+    {
+      "name": "ESPN Soccer",
+      "url": "https://www.espn.com/espn/rss/soccer/news",
+      "language": "en",
+      "category": "world_cup",
+      "enabled": true
+    },
+    {
+      "name": "Guardian World Cup 2026",
+      "url": "https://www.theguardian.com/football/world-cup-2026/rss",
+      "language": "en",
+      "category": "world_cup",
+      "enabled": true
+    },
+    {
+      "name": "Google News 世界杯中文",
+      "url": "https://news.google.com/rss/search?q=%222026%E4%B8%96%E7%95%8C%E6%9D%AF%22%20OR%20%22%E7%BE%8E%E5%8A%A0%E5%A2%A8%E4%B8%96%E7%95%8C%E6%9D%AF%22&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+      "language": "zh",
+      "category": "world_cup",
+      "enabled": true
+    },
+    {
+      "name": "36氪",
+      "url": "https://36kr.com/feed",
+      "language": "zh",
+      "category": "tech_news",
+      "enabled": true
+    },
+    {
+      "name": "Wired",
+      "url": "https://www.wired.com/feed/rss",
+      "language": "en",
+      "category": "tech_news",
+      "enabled": true
+    }
+  ],
+  "settings": {
+    "max_articles_per_source": 20,
+    "timeout_seconds": 20
+  }
+}
+
