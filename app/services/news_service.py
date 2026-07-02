@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Optional
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import AnalysisResult, Article
 from app.llm.client import LLMClient, parse_json_object
 from app.llm.prompts import NEWS_ANALYSIS_PROMPT
+from app.rss.models import RssArticle
 from app.rss.fetcher import fetch_all_sources
 from app.services.keyword_filter import article_query
 from app.services.scoring import recommendation_level, score_article, suggested_format, title_to_zh
@@ -35,16 +38,23 @@ async def fetch_and_store(db: Session) -> dict:
     rss_articles, errors = await fetch_all_sources()
     created = 0
     updated = 0
+    new_items: list[RssArticle] = []
     for item in rss_articles:
         existing = db.scalar(select(Article).where(Article.content_hash == item.content_hash))
         if existing:
             updated += 1
             continue
+        new_items.append(item)
+
+    translations, translation_errors = await translate_new_titles(new_items)
+    errors.extend(translation_errors)
+
+    for item in new_items:
         article = Article(
             source_name=item.source_name,
             source_url=item.source_url,
             title=item.title,
-            title_zh=title_to_zh(item.title, item.language),
+            title_zh=translations.get(item.content_hash) or title_to_zh(item.title, item.language),
             link=item.link,
             summary=item.summary,
             published_at=item.published_at,
@@ -59,6 +69,44 @@ async def fetch_and_store(db: Session) -> dict:
         created += 1
     db.commit()
     return {"fetched": len(rss_articles), "created": created, "duplicates": updated, "errors": errors}
+
+
+async def translate_new_titles(items: list[RssArticle]) -> tuple[dict[str, str], list[str]]:
+    targets = [item for item in items if item.language != "zh" and item.title]
+    if not targets:
+        return {}, []
+
+    translations: dict[str, str] = {}
+    semaphore = asyncio.Semaphore(8)
+
+    async def translate_one(client: httpx.AsyncClient, item: RssArticle) -> None:
+        async with semaphore:
+            try:
+                response = await client.get(
+                    "https://translate.googleapis.com/translate_a/single",
+                    params={
+                        "client": "gtx",
+                        "sl": "auto",
+                        "tl": "zh-CN",
+                        "dt": "t",
+                        "q": item.title,
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                title_zh = "".join(part[0] for part in data[0] if part and part[0]).strip()
+                if title_zh:
+                    translations[item.content_hash] = title_zh
+            except Exception:
+                return
+
+    async with httpx.AsyncClient(timeout=4, headers={"User-Agent": "rss-video-agent/0.1"}) as client:
+        tasks = [translate_one(client, item) for item in targets]
+        try:
+            await asyncio.wait_for(asyncio.gather(*tasks), timeout=10)
+        except asyncio.TimeoutError:
+            pass
+    return translations, []
 
 
 def list_articles(

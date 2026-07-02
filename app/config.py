@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4.1-mini"
     database_url: str = "sqlite:///./rss_video_agent.db"
-    rss_max_articles_per_source: int = 20
-    rss_timeout_seconds: int = 20
+    rss_max_articles_per_source: int = 10
+    rss_timeout_seconds: int = 15
 
 
 @lru_cache
@@ -24,4 +24,3 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
-

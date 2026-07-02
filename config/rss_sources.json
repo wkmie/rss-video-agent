@@ -22,6 +22,69 @@
       "enabled": true
     },
     {
+      "name": "The Block",
+      "url": "https://www.theblockcrypto.com/rss.xml",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "Bitcoin.com News",
+      "url": "https://news.bitcoin.com/rss/",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "CryptoSlate",
+      "url": "https://cryptoslate.com/feed/",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "Crypto Briefing",
+      "url": "https://cryptobriefing.com/feed/",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "BeInCrypto",
+      "url": "https://beincrypto.com/feed/",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "BlockBeats",
+      "url": "https://www.theblockbeats.info/rss",
+      "language": "zh",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "巴比特",
+      "url": "https://www.8btc.com/rss",
+      "language": "zh",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "PANews",
+      "url": "https://www.panewslab.com/zh/rss",
+      "language": "zh",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "PragmaLens",
+      "url": "https://www.pragmalens.xyz/",
+      "language": "zh",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
       "name": "TechCrunch AI",
       "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
       "language": "en",
@@ -32,6 +95,41 @@
       "name": "MIT Technology Review",
       "url": "https://www.technologyreview.com/feed/",
       "language": "en",
+      "category": "ai_news",
+      "enabled": true
+    },
+    {
+      "name": "The Verge",
+      "url": "https://www.theverge.com/rss/index.xml",
+      "language": "en",
+      "category": "ai_news",
+      "enabled": true
+    },
+    {
+      "name": "VentureBeat AI",
+      "url": "https://venturebeat.com/category/ai/feed/",
+      "language": "en",
+      "category": "ai_news",
+      "enabled": true
+    },
+    {
+      "name": "MarkTechPost",
+      "url": "https://www.marktechpost.com/feed/",
+      "language": "en",
+      "category": "ai_news",
+      "enabled": true
+    },
+    {
+      "name": "arXiv cs.AI",
+      "url": "https://rss.arxiv.org/rss/cs.AI",
+      "language": "en",
+      "category": "ai_research",
+      "enabled": true
+    },
+    {
+      "name": "机器之心",
+      "url": "https://www.jiqizhixin.com/rss",
+      "language": "zh",
       "category": "ai_news",
       "enabled": true
     },
@@ -64,8 +162,36 @@
       "enabled": true
     },
     {
+      "name": "Google News World Cup 2026 English",
+      "url": "https://news.google.com/rss/search?q=%222026%20FIFA%20World%20Cup%22%20OR%20%22World%20Cup%202026%22&hl=en-US&gl=US&ceid=US:en",
+      "language": "en",
+      "category": "world_cup",
+      "enabled": true
+    },
+    {
       "name": "36氪",
       "url": "https://36kr.com/feed",
+      "language": "zh",
+      "category": "tech_news",
+      "enabled": true
+    },
+    {
+      "name": "爱范儿",
+      "url": "https://www.ifanr.com/feed",
+      "language": "zh",
+      "category": "tech_news",
+      "enabled": true
+    },
+    {
+      "name": "钛媒体",
+      "url": "https://www.tmtpost.com/rss",
+      "language": "zh",
+      "category": "tech_news",
+      "enabled": true
+    },
+    {
+      "name": "虎嗅",
+      "url": "https://www.huxiu.com/rss",
       "language": "zh",
       "category": "tech_news",
       "enabled": true
@@ -79,8 +205,7 @@
     }
   ],
   "settings": {
-    "max_articles_per_source": 20,
-    "timeout_seconds": 20
+    "max_articles_per_source": 10,
+    "timeout_seconds": 15
   }
 }
-

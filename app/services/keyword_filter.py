@@ -17,6 +17,13 @@ TIME_RANGES = {
     "最近 7 天": timedelta(days=7),
 }
 
+BUSINESS_CATEGORY_MAP = {
+    "crypto": ["crypto_news"],
+    "ai": ["ai_news", "ai_research"],
+    "world_cup": ["world_cup"],
+    "tech": ["tech_news"],
+}
+
 
 def article_query(
     db: Session,
@@ -27,7 +34,8 @@ def article_query(
 ):
     stmt = select(Article)
     if category and category != "全部":
-        stmt = stmt.where(Article.category == category)
+        categories = BUSINESS_CATEGORY_MAP.get(category, [category])
+        stmt = stmt.where(Article.category.in_(categories))
     if keyword:
         like = f"%{keyword.strip()}%"
         stmt = stmt.where(or_(Article.title.ilike(like), Article.summary.ilike(like), Article.title_zh.ilike(like)))
