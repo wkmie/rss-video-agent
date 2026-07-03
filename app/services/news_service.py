@@ -6,6 +6,7 @@ from typing import Optional
 
 import httpx
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import AnalysisResult, Article
@@ -39,12 +40,18 @@ async def fetch_and_store(db: Session) -> dict:
     created = 0
     updated = 0
     new_items: list[RssArticle] = []
+    seen_hashes: set[str] = set()
     for item in rss_articles:
+        if item.content_hash in seen_hashes:
+            updated += 1
+            continue
+        seen_hashes.add(item.content_hash)
         existing = db.scalar(select(Article).where(Article.content_hash == item.content_hash))
         if existing:
             updated += 1
             continue
         new_items.append(item)
+    skipped_before_insert = updated
 
     translations, translation_errors = await translate_new_titles(new_items)
     errors.extend(translation_errors)
@@ -67,7 +74,39 @@ async def fetch_and_store(db: Session) -> dict:
         article.score = score
         db.add(article)
         created += 1
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        created = 0
+        updated = skipped_before_insert
+        for item in new_items:
+            existing = db.scalar(select(Article).where(Article.content_hash == item.content_hash))
+            if existing:
+                updated += 1
+                continue
+            article = Article(
+                source_name=item.source_name,
+                source_url=item.source_url,
+                title=item.title,
+                title_zh=translations.get(item.content_hash) or title_to_zh(item.title, item.language),
+                link=item.link,
+                summary=item.summary,
+                published_at=item.published_at,
+                category=item.category,
+                language=item.language,
+                content_hash=item.content_hash,
+                score=0,
+            )
+            score, _ = score_article(article)
+            article.score = score
+            db.add(article)
+            try:
+                db.commit()
+                created += 1
+            except IntegrityError:
+                db.rollback()
+                updated += 1
     return {"fetched": len(rss_articles), "created": created, "duplicates": updated, "errors": errors}
 
 
