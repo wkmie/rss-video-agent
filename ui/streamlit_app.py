@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
@@ -346,6 +347,44 @@ def duration_label(value: str) -> str:
     return DURATION_LABELS.get(LANG, {}).get(value, value)
 
 
+def parse_content_package(value: str) -> Optional[dict]:
+    try:
+        data = json.loads(value)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    required_keys = {"video_titles", "cover_titles", "video_tags", "script"}
+    return data if required_keys.issubset(data.keys()) else None
+
+
+def render_content_package(label: str, value: str, download_key: str, file_name: str) -> None:
+    package = parse_content_package(value)
+    if not package:
+        st.text_area(label, value, height=640)
+        st.download_button(t("download_txt"), value, file_name=file_name, key=download_key)
+        return
+
+    st.subheader(label)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**视频标题**")
+        for title in package.get("video_titles", []):
+            st.write(f"- {title}")
+    with col2:
+        st.markdown("**封面标题**")
+        for title in package.get("cover_titles", []):
+            st.write(f"- {title}")
+
+    tags = package.get("video_tags", [])
+    if tags:
+        st.markdown("**视频标签**")
+        st.write(" ".join(str(tag) for tag in tags))
+
+    st.text_area("视频文案", str(package.get("script", "")), height=520)
+    st.download_button(t("download_txt"), value, file_name=file_name, key=download_key)
+
+
 def article_label(article: dict) -> str:
     title = article.get("title_zh") or article.get("title")
     return f"#{article['id']} | {article.get('score', 0):.0f}{t('points')} | {title}"
@@ -463,8 +502,7 @@ with tab_script:
                 st.error(t("generation_failed", error=exc))
 
     if st.session_state.last_script:
-        st.text_area(t("generation_result"), st.session_state.last_script, height=640)
-        st.download_button(t("download_txt"), st.session_state.last_script, file_name="video_script.txt", key="download_article_default")
+        render_content_package(t("generation_result"), st.session_state.last_script, "download_article_default", "video_content_package.txt")
 
     st.divider()
     st.subheader(t("custom_generation"))
@@ -527,8 +565,7 @@ with tab_topic:
                     st.error(t("generation_failed", error=exc))
 
     if st.session_state.get("topic_script"):
-        st.text_area(t("topic_result"), st.session_state.topic_script, height=640)
-        st.download_button(t("download_topic"), st.session_state.topic_script, file_name="topic_script.txt", key="download_topic_default")
+        render_content_package(t("topic_result"), st.session_state.topic_script, "download_topic_default", "topic_content_package.txt")
 
     st.divider()
     st.subheader(t("custom_generation"))
