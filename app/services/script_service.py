@@ -1,4 +1,5 @@
 import re
+import json
 
 from sqlalchemy.orm import Session
 
@@ -36,7 +37,7 @@ def fallback_script(
         "小红书": "在小红书上，这类内容要更像是在帮用户避坑和做判断。",
         "B站": "在 B 站上，这类内容可以多讲一点逻辑，但别把它讲成报告。",
     }.get(platform, f"在{platform}上，这段内容要尽量贴合平台用户的阅读节奏。")
-    return f"""先说结论，{subject}这件事，不能只当成一条普通新闻看。真正值得关注的，是它接下来可能影响谁，以及会不会引发新的连锁反应。
+    script = f"""先说结论，{subject}这件事，不能只当成一条普通新闻看。真正值得关注的，是它接下来可能影响谁，以及会不会引发新的连锁反应。
 
 简单讲，现在能确认的信息是：{detail_line}{source_line}
 
@@ -45,6 +46,18 @@ def fallback_script(
 我的判断是，先不要急着下最终结论。因为 RSS 摘要里的信息通常比较有限，尤其是具体数字、当事方表态和后续时间线，都需要二次核实。但它已经释放出一个信号：相关领域正在出现新的变量，接下来要看市场、用户或者机构会不会给出明确反馈。
 
 如果你只想抓重点，就记住一句话：这件事短期看是新闻，长期看是趋势信号。后面我会继续跟进它的进展，你也可以在评论区说说，你觉得它会继续发酵，还是很快被市场忘掉。"""
+    if custom_prompt.strip():
+        return script
+    return json.dumps(
+        {
+            "video_titles": ["这事不简单", "真正的压力来了", "别只看表面热闹"],
+            "cover_titles": ["暗雷来了", "危险信号", "别忽视它"],
+            "video_tags": ["#热点解读", "#短视频文案", "#KOL口播", "#Web3", "#AI", "#科技", "#趋势观察", "#风险提醒"],
+            "script": script,
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
 
 
 def clean_script_output(text: str) -> str:
@@ -60,6 +73,14 @@ def clean_script_output(text: str) -> str:
     for end_marker in ["剪辑配图关键词", "剪辑建议", "自检", "标题：", "推荐标题"]:
         if end_marker in cleaned:
             cleaned = cleaned.split(end_marker, 1)[0].rstrip()
+    return cleaned
+
+
+def clean_json_output(text: str) -> str:
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned).strip()
     return cleaned
 
 
@@ -146,7 +167,8 @@ async def generate_text(
                 link=link,
             )
         try:
-            return clean_script_output(await client.chat(prompt, temperature=0.75))
+            output = await client.chat(prompt, temperature=0.75)
+            return clean_script_output(output) if custom_prompt.strip() else clean_json_output(output)
         except Exception as exc:
             raise RuntimeError(f"LLM generation failed: {exc}") from exc
     return fallback_script(topic, platform, duration, title, summary, source_name, link, custom_prompt)
