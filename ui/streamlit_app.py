@@ -57,7 +57,7 @@ for key in (
 
 API_BASE = os.getenv("API_BASE_URL", "").rstrip("/")
 USE_REMOTE_API = bool(API_BASE)
-CATEGORIES = ["全部", "crypto", "ai", "world_cup", "tech"]
+CATEGORIES = ["全部", "crypto", "ai", "tech"]
 TIME_RANGES = ["最近 6 小时", "最近 12 小时", "最近 24 小时", "最近 3 天", "最近 7 天"]
 DURATIONS = ["30秒", "1分钟", "3分钟", "5分钟", "10分钟"]
 PLATFORMS = ["视频号", "抖音", "小红书", "TikTok", "YouTube Shorts"]
@@ -71,7 +71,7 @@ TEXT = {
         "tab_topic": "主题直写",
         "category": "分类",
         "keyword": "关键词",
-        "keyword_placeholder": "例如 bitcoin / AI / 世界杯",
+        "keyword_placeholder": "例如 bitcoin / AI / 科技",
         "time_range": "时间范围",
         "limit": "数量",
         "fetch_rss": "抓取最新 RSS",
@@ -134,7 +134,7 @@ TEXT = {
         "tab_topic": "Topic Writer",
         "category": "Category",
         "keyword": "Keyword",
-        "keyword_placeholder": "e.g. bitcoin / AI / World Cup",
+        "keyword_placeholder": "e.g. bitcoin / AI / tech",
         "time_range": "Time Range",
         "limit": "Limit",
         "fetch_rss": "Fetch Latest RSS",
@@ -196,14 +196,12 @@ CATEGORY_LABELS = {
         "全部": "全部",
         "crypto": "加密货币",
         "ai": "人工智能",
-        "world_cup": "世界杯",
         "tech": "科技新闻",
     },
     "en": {
         "全部": "All",
         "crypto": "Crypto",
         "ai": "Artificial Intelligence",
-        "world_cup": "World Cup",
         "tech": "Tech News",
     }
 }

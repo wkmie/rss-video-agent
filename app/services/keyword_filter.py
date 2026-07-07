@@ -20,9 +20,9 @@ TIME_RANGES = {
 BUSINESS_CATEGORY_MAP = {
     "crypto": ["crypto_news"],
     "ai": ["ai_news", "ai_research"],
-    "world_cup": ["world_cup"],
     "tech": ["tech_news"],
 }
+HIDDEN_CATEGORIES = {"world_cup"}
 
 
 def article_query(
@@ -33,6 +33,7 @@ def article_query(
     limit: int = 50,
 ):
     stmt = select(Article)
+    stmt = stmt.where(Article.category.notin_(HIDDEN_CATEGORIES))
     if category and category != "全部":
         categories = BUSINESS_CATEGORY_MAP.get(category, [category])
         stmt = stmt.where(Article.category.in_(categories))

@@ -9,11 +9,10 @@ from app.db.models import Article
 HOT_WORDS = {
     "crypto": ["bitcoin", "btc", "ethereum", "etf", "sec", "binance", "stablecoin", "hack", "airdrop"],
     "ai": ["openai", "google", "anthropic", "model", "agent", "robot", "gpu", "nvidia", "research"],
-    "sports": ["world cup", "fifa", "messi", "ronaldo", "team", "coach", "final", "qualifier"],
     "tech": ["launch", "lawsuit", "security", "privacy", "startup", "funding", "china", "apple", "meta"],
 }
 CONFLICT_WORDS = ["ban", "crackdown", "lawsuit", "controversy", "risk", "warn", "fight", "vs", "drop", "surge", "scam", "hack"]
-CHINESE_HOT_WORDS = ["比特币", "世界杯", "人工智能", "大模型", "英伟达", "监管", "黑客", "融资", "争议", "预测"]
+CHINESE_HOT_WORDS = ["比特币", "人工智能", "大模型", "英伟达", "监管", "黑客", "融资", "争议", "预测"]
 
 
 def score_article(article: Article) -> tuple[int, dict[str, int]]:
@@ -26,7 +25,7 @@ def score_article(article: Article) -> tuple[int, dict[str, int]]:
     heat = min(20, 8 + hot_hits * 3)
     conflict = min(20, 6 + conflict_hits * 4)
     understandability = 18 if len(article.title) <= 90 else 14
-    account_match = 18 if article.category in {"crypto_news", "ai_news", "world_cup", "tech_news"} else 12
+    account_match = 18 if article.category in {"crypto_news", "ai_news", "tech_news"} else 12
     conversion = min(20, 8 + hot_hits * 2 + conflict_hits * 2)
 
     detail = {

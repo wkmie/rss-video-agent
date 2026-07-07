@@ -134,41 +134,6 @@
       "enabled": true
     },
     {
-      "name": "BBC Football",
-      "url": "http://newsrss.bbc.co.uk/rss/sportonline_uk_edition/football/rss.xml",
-      "language": "en",
-      "category": "world_cup",
-      "enabled": true
-    },
-    {
-      "name": "ESPN Soccer",
-      "url": "https://www.espn.com/espn/rss/soccer/news",
-      "language": "en",
-      "category": "world_cup",
-      "enabled": true
-    },
-    {
-      "name": "Guardian World Cup 2026",
-      "url": "https://www.theguardian.com/football/world-cup-2026/rss",
-      "language": "en",
-      "category": "world_cup",
-      "enabled": true
-    },
-    {
-      "name": "Google News 世界杯中文",
-      "url": "https://news.google.com/rss/search?q=%222026%E4%B8%96%E7%95%8C%E6%9D%AF%22%20OR%20%22%E7%BE%8E%E5%8A%A0%E5%A2%A8%E4%B8%96%E7%95%8C%E6%9D%AF%22&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
-      "language": "zh",
-      "category": "world_cup",
-      "enabled": true
-    },
-    {
-      "name": "Google News World Cup 2026 English",
-      "url": "https://news.google.com/rss/search?q=%222026%20FIFA%20World%20Cup%22%20OR%20%22World%20Cup%202026%22&hl=en-US&gl=US&ceid=US:en",
-      "language": "en",
-      "category": "world_cup",
-      "enabled": true
-    },
-    {
       "name": "36氪",
       "url": "https://36kr.com/feed",
       "language": "zh",
