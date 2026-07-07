@@ -148,7 +148,5 @@ async def generate_text(
         try:
             return clean_script_output(await client.chat(prompt, temperature=0.75))
         except Exception as exc:
-            raise RuntimeError(
-                "LLM generation failed. Check OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL, or network access."
-            ) from exc
+            raise RuntimeError(f"LLM generation failed: {exc}") from exc
     return fallback_script(topic, platform, duration, title, summary, source_name, link, custom_prompt)

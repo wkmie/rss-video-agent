@@ -8,6 +8,13 @@ import httpx
 from app.config import settings
 
 
+def safe_error_body(response: httpx.Response) -> str:
+    text = response.text.strip()
+    if not text:
+        return ""
+    return text[:500]
+
+
 class LLMClient:
     def __init__(self) -> None:
         self.api_key = settings.openai_api_key
@@ -28,8 +35,20 @@ class LLMClient:
         }
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         async with httpx.AsyncClient(timeout=90, headers=headers) as client:
-            response = await client.post(f"{self.base_url}/chat/completions", json=payload)
-            response.raise_for_status()
+            try:
+                response = await client.post(f"{self.base_url}/chat/completions", json=payload)
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code
+                detail = safe_error_body(exc.response)
+                raise RuntimeError(
+                    f"LLM request failed with HTTP {status_code}. "
+                    f"Check OPENAI_API_KEY, OPENAI_BASE_URL, and OPENAI_MODEL. {detail}"
+                ) from exc
+            except httpx.RequestError as exc:
+                raise RuntimeError(
+                    f"LLM request network error: {exc}. Check OPENAI_BASE_URL and Streamlit network access."
+                ) from exc
         data = response.json()
         return data["choices"][0]["message"]["content"]
 

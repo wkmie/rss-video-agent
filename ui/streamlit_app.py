@@ -19,6 +19,30 @@ try:
 except Exception:
     STREAMLIT_SECRETS = {}
 
+SECRET_ALIASES = {
+    "OPENAI_API_KEY": ("OPENAI_API_KEY", "openai_api_key", "api_key"),
+    "OPENAI_BASE_URL": ("OPENAI_BASE_URL", "openai_base_url", "base_url"),
+    "OPENAI_MODEL": ("OPENAI_MODEL", "openai_model", "model"),
+    "DATABASE_URL": ("DATABASE_URL", "database_url"),
+    "RSS_MAX_ARTICLES_PER_SOURCE": ("RSS_MAX_ARTICLES_PER_SOURCE", "rss_max_articles_per_source"),
+    "RSS_TIMEOUT_SECONDS": ("RSS_TIMEOUT_SECONDS", "rss_timeout_seconds"),
+}
+
+
+def streamlit_secret_value(env_key: str) -> Optional[str]:
+    aliases = SECRET_ALIASES.get(env_key, (env_key,))
+    for alias in aliases:
+        if alias in STREAMLIT_SECRETS:
+            return str(STREAMLIT_SECRETS[alias])
+    for section_name in ("openai", "llm", "general", "app"):
+        section = STREAMLIT_SECRETS.get(section_name)
+        if isinstance(section, dict):
+            for alias in aliases:
+                if alias in section:
+                    return str(section[alias])
+    return None
+
+
 for key in (
     "OPENAI_API_KEY",
     "OPENAI_BASE_URL",
@@ -27,8 +51,9 @@ for key in (
     "RSS_MAX_ARTICLES_PER_SOURCE",
     "RSS_TIMEOUT_SECONDS",
 ):
-    if key in STREAMLIT_SECRETS and key not in os.environ:
-        os.environ[key] = str(STREAMLIT_SECRETS[key])
+    value = streamlit_secret_value(key)
+    if value and key not in os.environ:
+        os.environ[key] = value
 
 API_BASE = os.getenv("API_BASE_URL", "").rstrip("/")
 USE_REMOTE_API = bool(API_BASE)
