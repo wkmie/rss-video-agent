@@ -4,6 +4,7 @@ import asyncio
 import json as jsonlib
 import json
 import re
+from html import unescape
 from pathlib import Path
 from typing import Optional
 
@@ -40,6 +41,8 @@ async def fetch_source(source: RssSource, limit: Optional[int] = None) -> list[R
     feed = feedparser.parse(response.content)
     if not feed.entries and "pragmalens.xyz" in str(source.url):
         return parse_pragmalens_page(response.text, source, max_items)
+    if not feed.entries and "odaily.news" in str(source.url):
+        return parse_odaily_page(response.text, source, max_items)
     articles: list[RssArticle] = []
     for entry in feed.entries[:max_items]:
         title = normalize_title(getattr(entry, "title", ""))
@@ -102,6 +105,57 @@ def parse_pragmalens_page(html: str, source: RssSource, max_items: int) -> list[
                 summary=summary,
                 published_at=published,
                 category=category,
+                language=source.language,
+                content_hash=content_hash(link, title, source.name),
+            )
+        )
+        if len(articles) >= max_items:
+            break
+    return articles
+
+
+def strip_html(value: str) -> str:
+    return re.sub(r"<[^>]+>", "", unescape(value)).strip()
+
+
+def parse_odaily_page(html: str, source: RssSource, max_items: int) -> list[RssArticle]:
+    pattern = re.compile(
+        r'\{\\"id\\":(?P<id>\d+),\\"entityType\\":(?P<entity_type>\d+),\\"entityId\\":(?P<entity_id>\d+)'
+        r'.*?\\"publishedTime\\":\\"(?P<published>(?:\\\\.|[^"\\])*)\\"'
+        r'.*?\\"newsUrl\\":(?P<news_url>null|\\"(?:\\\\.|[^"\\])*\\")'
+        r'.*?\\"summary\\":\\"(?P<summary>(?:\\\\.|[^"\\])*)\\"'
+        r'.*?\\"title\\":\\"(?P<title>(?:\\\\.|[^"\\])*)\\"',
+        re.DOTALL,
+    )
+    articles: list[RssArticle] = []
+    seen_links: set[str] = set()
+    for match in pattern.finditer(html):
+        title = normalize_title(decode_js_string(match.group("title")))
+        if not title:
+            continue
+        entity_type = match.group("entity_type")
+        entity_id = match.group("entity_id")
+        news_url = match.group("news_url")
+        if news_url != "null":
+            link = decode_js_string(news_url[2:-2])
+        elif entity_type == "4":
+            link = f"https://www.odaily.news/zh-CN/newsflash/{entity_id}"
+        else:
+            link = f"https://www.odaily.news/zh-CN/post/{entity_id}"
+        if link in seen_links:
+            continue
+        seen_links.add(link)
+        summary = strip_html(decode_js_string(match.group("summary")))
+        published = parse_datetime(decode_js_string(match.group("published")))
+        articles.append(
+            RssArticle(
+                source_name=source.name,
+                source_url=str(source.url),
+                title=title,
+                link=link,
+                summary=normalize_summary(summary),
+                published_at=published,
+                category=source.category,
                 language=source.language,
                 content_hash=content_hash(link, title, source.name),
             )

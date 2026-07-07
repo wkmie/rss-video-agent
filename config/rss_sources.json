@@ -85,6 +85,34 @@
       "enabled": true
     },
     {
+      "name": "Blockworks",
+      "url": "https://blockworks.co/feed",
+      "language": "en",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "Foresight News",
+      "url": "https://foresightnews.pro/rss",
+      "language": "zh",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "Odaily",
+      "url": "https://www.odaily.news",
+      "language": "zh",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
+      "name": "吴说区块链",
+      "url": "https://www.wublock123.com/rss",
+      "language": "zh",
+      "category": "crypto_news",
+      "enabled": true
+    },
+    {
       "name": "TechCrunch AI",
       "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
       "language": "en",
