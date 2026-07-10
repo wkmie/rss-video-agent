@@ -10,6 +10,7 @@
 - 按分类、关键词、时间范围筛选消息
 - 用规则评分输出短视频选题池
 - 可调用 OpenAI 兼容 API 做选题分析和视频文案生成
+- 自动事前选题：从互联网抓取未来宏观、Web3、Token 解锁、AI 科技、监管和网络安全事件，并生成提前发布的视频内容包
 - 没有配置 API Key 时，也能使用规则版降级文案跑通流程
 - 预留 `data/imports/` 目录，后续可导入平台热点 CSV
 
@@ -39,11 +40,23 @@ OPENAI_MODEL=gpt-4.1-mini
 
 DATABASE_URL=sqlite:///./rss_video_agent.db
 
-RSS_MAX_ARTICLES_PER_SOURCE=20
-RSS_TIMEOUT_SECONDS=20
+RSS_MAX_ARTICLES_PER_SOURCE=10
+RSS_TIMEOUT_SECONDS=15
+
+TRADING_ECONOMICS_API_KEY=
+FINNHUB_API_KEY=
+COINMARKETCAL_API_KEY=
+TOKEN_UNLOCKS_API_KEY=
+MESSARI_API_KEY=
+
+PRE_EVENT_FETCH_DAYS=30
+PRE_EVENT_DEFAULT_COUNTRIES=United States,China,Japan,Euro Area
+PRE_EVENT_MIN_IMPORTANCE=medium
 ```
 
 如果不填 `OPENAI_API_KEY`，系统会使用本地规则版分析和文案模板，不会调用大模型。
+
+事前事件源中，Trading Economics、Finnhub、CoinMarketCal、Token Unlocks、Messari 需要 API Key。Google News RSS 兜底搜索、Microsoft Patch Tuesday 规则事件等不需要 API Key。缺少某个 API Key 时，系统会在前端提示并跳过该 API 源，不会影响其他事件源抓取。
 
 ## 初始化数据库
 
@@ -137,6 +150,49 @@ API_BASE_URL=http://127.0.0.1:8000 streamlit run ui/streamlit_app.py
 - 剪辑配图关键词
 - 自检
 
+## 自动事前选题
+
+自动事前选题用于提前发现未来重要事件，并生成 KOL 可提前发布的视频内容包。第一版不需要导入 CSV，也不包含体育赛事方向。
+
+使用步骤：
+
+1. 启动 FastAPI 和 Streamlit。
+2. 打开 Streamlit 侧边栏里的“自动事前选题”页面。
+3. 点击“抓取未来 7 天事件”或“抓取未来 30 天事件”。
+4. 使用时间范围、分类、重要性、状态和关键词筛选事件。
+5. 选择某个事件，点击“生成事前选题”。
+6. 设置目标平台、视频时长和补充要求。
+7. 点击“生成内容”，系统会输出视频标题、封面标题、视频标签、选题理由、文案方向、完整口播文案和建议发布时间。
+
+命令行抓取：
+
+```bash
+python scripts/fetch_pre_events.py --days 7
+python scripts/fetch_pre_events.py --days 30 --category Web3
+python scripts/fetch_pre_events.py --days 30 --category 宏观数据 --force-refresh
+```
+
+新增事件数据源：
+
+1. 在 `config/event_sources.json` 中增加来源配置。
+2. 在 `app/services/event_collectors/` 下新增采集器，继承 `BaseEventCollector`。
+3. 采集器返回统一的 `EventItem`。
+4. 在 `app/services/event_collectors/__init__.py` 的 `COLLECTORS` 中注册分类。
+5. 如果需要关键词匹配，在 `config/event_keywords.json` 中补充关键词。
+
+事件去重策略：
+
+- 系统会用 `event_name + event_time + source` 生成 `content_hash`。
+- 同一事件重复出现时会跳过或按 `force_refresh` 更新。
+- 没有明确日期的事件不会入库；只有日期没有具体时间的事件默认按当天 09:00 处理。
+
+注意：
+
+- GPT 只负责基于已抓取事件生成内容，不负责凭空创造事件。
+- 事件源失败不会中断整体抓取。
+- 没有来源链接的事件不会被标记为 high 或 critical。
+- 当前模块不包含世界杯、F1、NBA、欧冠等体育赛事。
+
 ## 平台热点 CSV 导入预留
 
 第一版不直接爬取 TikTok、微信视频号、抖音、小红书。
@@ -164,6 +220,19 @@ platform,title,description,url,views,likes,comments,shares,published_at,category
 - `POST /api/news/analyze`
 - `POST /api/script/from_article`
 - `POST /api/script/from_topic`
+- `POST /api/pre-events/fetch`
+- `GET /api/pre-events/list`
+- `GET /api/pre-events/upcoming`
+- `POST /api/pre-topics/generate`
+- `GET /api/pre-topics/list`
+- `PUT /api/pre-topics/{topic_id}/status`
+- `PUT /api/pre-events/{event_id}/status`
+- `POST /api/web3-hot/fetch-now`
+- `GET /api/web3-hot/list`
+- `GET /api/web3-hot/ticker`
+- `GET /api/web3-hot/{item_id}`
+- `POST /api/web3-hot/{item_id}/generate-content`
+- `GET /api/web3-hot/stats`
 
 示例：
 
@@ -210,3 +279,64 @@ rss_video_agent.db
 
 可通过 `.env` 的 `DATABASE_URL` 修改。
 
+## Web3 实时热度消息墙
+
+Streamlit 侧边栏新增页面：`Web3实时热度消息墙`。
+
+这个模块用于聚合 Web3 / Crypto 热点消息，并按热度分展示。第一版支持：
+
+- Web3 新闻 RSS 抓取
+- Google News RSS 关键词召回
+- 可选 X Recent Search API
+- 可选 LunarCrush API
+- `heat_score` 热度分，满分 100
+- `red / yellow / gray` 热度等级
+- `new / rising / hot / cooling` 趋势状态
+- 点击热点生成视频标题、封面标题、标签和口播文案
+
+命令行抓取：
+
+```bash
+python scripts/fetch_web3_hot.py
+python scripts/fetch_web3_hot.py --source-type rss
+python scripts/fetch_web3_hot.py --source-type google_news_rss --keyword ETF
+```
+
+配置 X API：
+
+```bash
+X_BEARER_TOKEN=你的_X_BEARER_TOKEN
+```
+
+然后把 `config/web3_hot_sources.json` 里的 `X Crypto Search` 改为 `"enabled": true`。没有配置时系统会跳过 X，不影响 RSS 和 Google News RSS。
+
+配置 LunarCrush：
+
+```bash
+LUNARCRUSH_API_KEY=你的_LUNARCRUSH_API_KEY
+```
+
+然后把 `config/web3_hot_sources.json` 里的 `LunarCrush` 改为 `"enabled": true`。没有配置时系统会跳过 LunarCrush。
+
+新增热点数据源：
+
+编辑 `config/web3_hot_sources.json`，新增 RSS 或 Google News RSS 来源：
+
+```json
+{
+  "name": "Example Source",
+  "type": "rss",
+  "enabled": true,
+  "priority": "P1",
+  "url": "https://example.com/feed.xml",
+  "poll_interval_seconds": 180
+}
+```
+
+调整刷新频率：
+
+```bash
+WEB3_HOT_REFRESH_SECONDS=60
+WEB3_HOT_ITEM_TTL_HOURS=24
+WEB3_HOT_MAX_ITEMS_PER_SOURCE=50
+```

@@ -1,0 +1,50 @@
+{
+  "sources": [
+    {
+      "name": "Trading Economics",
+      "type": "macro_calendar",
+      "enabled": true,
+      "requires_api_key": true,
+      "api_key_env": "TRADING_ECONOMICS_API_KEY",
+      "priority": "high"
+    },
+    {
+      "name": "Finnhub Economic Calendar",
+      "type": "macro_calendar",
+      "enabled": true,
+      "requires_api_key": true,
+      "api_key_env": "FINNHUB_API_KEY",
+      "priority": "medium"
+    },
+    {
+      "name": "CoinMarketCal",
+      "type": "crypto_calendar",
+      "enabled": true,
+      "requires_api_key": true,
+      "api_key_env": "COINMARKETCAL_API_KEY",
+      "priority": "high"
+    },
+    {
+      "name": "Token Unlocks",
+      "type": "token_unlocks",
+      "enabled": true,
+      "requires_api_key": true,
+      "api_key_env": "TOKEN_UNLOCKS_API_KEY",
+      "priority": "high"
+    },
+    {
+      "name": "Google News Event Search",
+      "type": "news_event_search",
+      "enabled": true,
+      "requires_api_key": false,
+      "priority": "low"
+    },
+    {
+      "name": "CISA",
+      "type": "security_calendar",
+      "enabled": true,
+      "requires_api_key": false,
+      "priority": "medium"
+    }
+  ]
+}

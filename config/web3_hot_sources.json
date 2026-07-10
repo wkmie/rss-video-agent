@@ -1,0 +1,134 @@
+{
+  "sources": [
+    {
+      "name": "CoinDesk",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "Cointelegraph",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://cointelegraph.com/rss",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "Decrypt",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://decrypt.co/feed",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "The Block",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://www.theblockcrypto.com/rss.xml",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "BlockBeats",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://www.theblockbeats.info/rss",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "PANews",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://www.panewslab.com/zh/rss",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "Foresight News",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://foresightnews.pro/feed",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "Odaily",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://www.odaily.news/newsflash/feed",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "Wu Blockchain",
+      "type": "rss",
+      "enabled": true,
+      "priority": "P1",
+      "url": "https://www.wublockchain.xyz/rss",
+      "poll_interval_seconds": 180
+    },
+    {
+      "name": "Google News BTC",
+      "type": "google_news_rss",
+      "enabled": true,
+      "priority": "P2",
+      "url": "https://news.google.com/rss/search?q=bitcoin%20OR%20BTC%20crypto&hl=en-US&gl=US&ceid=US:en",
+      "poll_interval_seconds": 300
+    },
+    {
+      "name": "Google News ETH",
+      "type": "google_news_rss",
+      "enabled": true,
+      "priority": "P2",
+      "url": "https://news.google.com/rss/search?q=ethereum%20OR%20ETH%20crypto&hl=en-US&gl=US&ceid=US:en",
+      "poll_interval_seconds": 300
+    },
+    {
+      "name": "Google News Strategy BTC",
+      "type": "google_news_rss",
+      "enabled": true,
+      "priority": "P2",
+      "url": "https://news.google.com/rss/search?q=%22MicroStrategy%22%20OR%20%22Strategy%22%20bitcoin%20OR%20BTC&hl=en-US&gl=US&ceid=US:en",
+      "poll_interval_seconds": 300
+    },
+    {
+      "name": "Google News Crypto Risk",
+      "type": "google_news_rss",
+      "enabled": true,
+      "priority": "P2",
+      "url": "https://news.google.com/rss/search?q=crypto%20hack%20OR%20exploit%20OR%20depeg%20OR%20%22withdrawal%20halt%22&hl=en-US&gl=US&ceid=US:en",
+      "poll_interval_seconds": 300
+    },
+    {
+      "name": "Google News Crypto ETF",
+      "type": "google_news_rss",
+      "enabled": true,
+      "priority": "P2",
+      "url": "https://news.google.com/rss/search?q=SEC%20crypto%20ETF%20OR%20bitcoin%20ETF%20OR%20ethereum%20ETF&hl=en-US&gl=US&ceid=US:en",
+      "poll_interval_seconds": 300
+    },
+    {
+      "name": "X Crypto Search",
+      "type": "x_recent_search",
+      "enabled": false,
+      "priority": "P1",
+      "requires_api_key": true,
+      "api_key_env": "X_BEARER_TOKEN",
+      "poll_interval_seconds": 120
+    },
+    {
+      "name": "LunarCrush",
+      "type": "lunarcrush",
+      "enabled": false,
+      "priority": "P1",
+      "requires_api_key": true,
+      "api_key_env": "LUNARCRUSH_API_KEY",
+      "poll_interval_seconds": 300
+    }
+  ]
+}

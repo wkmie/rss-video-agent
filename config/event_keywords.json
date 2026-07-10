@@ -1,0 +1,70 @@
+{
+  "macro": [
+    "CPI",
+    "PPI",
+    "Nonfarm Payrolls",
+    "Initial Jobless Claims",
+    "FOMC",
+    "Federal Reserve",
+    "Powell",
+    "GDP",
+    "PMI",
+    "Retail Sales",
+    "Consumer Confidence",
+    "Treasury auction"
+  ],
+  "crypto": [
+    "mainnet",
+    "airdrop",
+    "snapshot",
+    "token launch",
+    "exchange listing",
+    "governance vote",
+    "ETF deadline",
+    "protocol upgrade",
+    "hard fork",
+    "stablecoin regulation"
+  ],
+  "token_unlock": [
+    "unlock",
+    "vesting",
+    "cliff unlock",
+    "linear unlock",
+    "circulating supply"
+  ],
+  "ai_tech": [
+    "OpenAI",
+    "Apple Event",
+    "Google I/O",
+    "Nvidia earnings",
+    "Meta Connect",
+    "Microsoft Build",
+    "Anthropic",
+    "model release",
+    "product launch",
+    "AI chip"
+  ],
+  "regulation": [
+    "SEC",
+    "CFTC",
+    "FATF",
+    "SFC",
+    "MAS",
+    "MiCA",
+    "hearing",
+    "approval deadline",
+    "ETF decision",
+    "stablecoin bill"
+  ],
+  "security": [
+    "CVE",
+    "vulnerability",
+    "Patch Tuesday",
+    "security advisory",
+    "zero-day",
+    "ransomware",
+    "supply chain attack",
+    "CISA",
+    "NVD"
+  ]
+}
