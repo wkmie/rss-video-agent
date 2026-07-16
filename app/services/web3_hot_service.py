@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.config import BASE_DIR, settings
 from app.db.models import Web3HotGeneratedContent, Web3HotItem, Web3HotScore
 from app.llm.client import LLMClient, parse_json_object
-from app.llm.web3_hot_prompts import WEB3_HOT_CONTENT_PROMPT
+from app.llm.web3_hot_prompts import WEB3_HOT_CONTENT_PROMPT, X_POSTS_SCRIPT_PROMPT
 from app.services.web3_hot_collectors import HOT_COLLECTORS
 from app.services.web3_hot_collectors.base import HotFeedItem
 from app.services.web3_hot_scoring import compute_scores
@@ -390,3 +390,36 @@ async def generate_hot_content(
     db.commit()
     db.refresh(record)
     return {"id": record.id, "item_id": item.id, **data}
+
+
+async def generate_script_from_x_posts(
+    posts: list[str],
+    target_platform: str = "抖音",
+    duration: str = "3分钟",
+    user_instruction: str = "",
+) -> dict[str, Any]:
+    normalized_posts = [post.strip() for post in posts if post and post.strip()]
+    if not normalized_posts:
+        raise ValueError("请至少输入一条 X 消息")
+    if len(normalized_posts) > 20:
+        raise ValueError("一次最多处理 20 条 X 消息")
+    if sum(len(post) for post in normalized_posts) > 60_000:
+        raise ValueError("X 消息总内容过长，请精简后重试")
+
+    client = LLMClient()
+    if not client.enabled:
+        raise RuntimeError("OPENAI_API_KEY is not configured")
+
+    posts_text = "\n\n".join(
+        f"[X 消息 {index}]\n{post}" for index, post in enumerate(normalized_posts, start=1)
+    )
+    prompt = X_POSTS_SCRIPT_PROMPT.format(
+        posts_text=posts_text,
+        target_platform=target_platform,
+        duration=duration,
+        user_instruction=user_instruction.strip(),
+    )
+    script = (await client.chat(prompt, temperature=0.72)).strip()
+    if not script:
+        raise RuntimeError("大模型未返回文案")
+    return {"script": script, "post_count": len(normalized_posts)}

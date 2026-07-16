@@ -315,7 +315,7 @@ Streamlit 侧边栏新增页面：`Web3实时热度消息墙`。
 
 - Web3 新闻 RSS 抓取
 - Google News RSS 关键词召回
-- 可选 X Recent Search API
+- X Recent Search API
 - 可选 LunarCrush API
 - `heat_score` 热度分，满分 100
 - `red / yellow / gray` 热度等级
@@ -336,7 +336,7 @@ python scripts/fetch_web3_hot.py --source-type google_news_rss --keyword ETF
 X_BEARER_TOKEN=你的_X_BEARER_TOKEN
 ```
 
-然后把 `config/web3_hot_sources.json` 里的 `X Crypto Search` 改为 `"enabled": true`。没有配置时系统会跳过 X，不影响 RSS 和 Google News RSS。
+`X Crypto Search` 默认启用；没有配置 Token 时系统会跳过 X，不影响 RSS 和 Google News RSS。程序不设置每日用量、请求间隔或费用预算限制，实际用量与费用以 X 开发者账户为准。
 
 配置 LunarCrush：
 

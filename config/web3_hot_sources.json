@@ -115,7 +115,7 @@
     {
       "name": "X Crypto Search",
       "type": "x_recent_search",
-      "enabled": false,
+      "enabled": true,
       "priority": "P1",
       "requires_api_key": true,
       "api_key_env": "X_BEARER_TOKEN",

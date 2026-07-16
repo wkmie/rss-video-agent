@@ -29,6 +29,7 @@ SECRET_ALIASES = {
     "DATABASE_URL": ("DATABASE_URL", "database_url"),
     "RSS_MAX_ARTICLES_PER_SOURCE": ("RSS_MAX_ARTICLES_PER_SOURCE", "rss_max_articles_per_source"),
     "RSS_TIMEOUT_SECONDS": ("RSS_TIMEOUT_SECONDS", "rss_timeout_seconds"),
+    "X_BEARER_TOKEN": ("X_BEARER_TOKEN", "x_bearer_token"),
 }
 
 
@@ -53,6 +54,7 @@ for key in (
     "DATABASE_URL",
     "RSS_MAX_ARTICLES_PER_SOURCE",
     "RSS_TIMEOUT_SECONDS",
+    "X_BEARER_TOKEN",
 ):
     value = streamlit_secret_value(key)
     if value and key not in os.environ:

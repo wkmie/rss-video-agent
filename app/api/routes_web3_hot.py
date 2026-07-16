@@ -10,6 +10,7 @@ from app.db.database import get_db
 from app.services.web3_hot_service import (
     fetch_and_store_hot_items,
     generate_hot_content,
+    generate_script_from_x_posts,
     get_hot_item_detail,
     hot_stats,
     list_hot_items,
@@ -30,6 +31,13 @@ class GenerateContentRequest(BaseModel):
     duration: str = "3分钟"
     user_instruction: str = ""
     use_llm: bool = True
+
+
+class GenerateFromXPostsRequest(BaseModel):
+    posts: list[str]
+    target_platform: str = "抖音"
+    duration: str = "3分钟"
+    user_instruction: str = ""
 
 
 @router.post("/fetch-now")
@@ -69,6 +77,21 @@ def ticker(limit: int = Query(15, ge=1, le=50), db: Session = Depends(get_db)) -
 @router.get("/stats")
 def stats(db: Session = Depends(get_db)) -> dict:
     return hot_stats(db)
+
+
+@router.post("/generate-from-x-posts")
+async def generate_from_x_posts(payload: GenerateFromXPostsRequest) -> dict:
+    try:
+        return await generate_script_from_x_posts(
+            posts=payload.posts,
+            target_platform=payload.target_platform,
+            duration=payload.duration,
+            user_instruction=payload.user_instruction,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.get("/{item_id}")

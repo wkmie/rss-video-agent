@@ -3,13 +3,13 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import httpx
 import streamlit as st
-import streamlit.components.v1 as components
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -67,6 +67,7 @@ def direct_call(method: str, path: str, payload: Optional[dict] = None, params: 
     from app.services.web3_hot_service import (
         fetch_and_store_hot_items,
         generate_hot_content,
+        generate_script_from_x_posts,
         get_hot_item_detail,
         hot_stats,
         list_hot_items,
@@ -97,6 +98,16 @@ def direct_call(method: str, path: str, payload: Optional[dict] = None, params: 
             return {"items": ticker_items(db, int(params.get("limit") or 15))}
         if method == "GET" and path == "/api/web3-hot/stats":
             return hot_stats(db)
+        if method == "POST" and path == "/api/web3-hot/generate-from-x-posts":
+            payload = payload or {}
+            return run_async(
+                generate_script_from_x_posts(
+                    posts=payload.get("posts") or [],
+                    target_platform=payload.get("target_platform", "抖音"),
+                    duration=payload.get("duration", "3分钟"),
+                    user_instruction=payload.get("user_instruction", ""),
+                )
+            )
         if method == "GET" and path.startswith("/api/web3-hot/"):
             return get_hot_item_detail(db, int(path.rsplit("/", 1)[-1]))
         if method == "POST" and path.endswith("/generate-content"):
@@ -143,49 +154,12 @@ def badge_style(level: str) -> str:
     }.get(level, "background:#f1f3f5;color:#495057;border:1px solid #dee2e6;")
 
 
-def render_ticker(items: list[dict]) -> None:
-    cards = []
+def group_items_by_source(items: list[dict]) -> dict[str, list[dict]]:
+    grouped: dict[str, list[dict]] = {}
     for item in items:
-        level = item.get("heat_level", "gray")
-        trend = item.get("trend_status", "new")
-        trend_label = "NEW" if trend == "new" else "RISING" if trend == "rising" else trend.upper()
-        cards.append(
-            f"""
-            <div class="hot-card">
-              <div>
-                <span class="badge {level}">{level.upper()}</span>
-                <span class="trend">{trend_label}</span>
-                <span class="score">{item.get('heat_score', 0):.1f}</span>
-              </div>
-              <div class="title">{item.get('title', '')}</div>
-              <div class="meta">{item.get('source_name', '')} · {format_time(item.get('published_at'))}</div>
-              <div class="summary">{item.get('summary') or ''}</div>
-            </div>
-            """
-        )
-    html = f"""
-    <style>
-      .wall-wrap {{ height: 420px; overflow: hidden; border: 1px solid #e9ecef; border-radius: 8px; background: #fff; }}
-      .wall-scroll {{ animation: scrollUp 35s linear infinite; padding: 12px; }}
-      .wall-scroll:hover {{ animation-play-state: paused; }}
-      .hot-card {{ padding: 14px 14px 12px; margin-bottom: 12px; border-bottom: 1px solid #eef1f4; }}
-      .badge {{ display:inline-block; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 700; margin-right: 8px; }}
-      .badge.red {{ background:#ffe5e5;color:#b00020;border:1px solid #ffb3b3; }}
-      .badge.yellow {{ background:#fff6d8;color:#8a6100;border:1px solid #ffe28a; }}
-      .badge.gray {{ background:#f1f3f5;color:#495057;border:1px solid #dee2e6; }}
-      .trend {{ display:inline-block; border-radius: 999px; padding: 2px 8px; font-size: 12px; background:#eef6ff; color:#0b5cad; }}
-      .score {{ float:right; font-weight:700; }}
-      .title {{ margin-top:8px; font-weight:700; font-size:17px; line-height:1.35; }}
-      .meta {{ margin-top:5px; color:#667085; font-size:13px; }}
-      .summary {{ margin-top:7px; color:#3f4752; font-size:14px; line-height:1.45; }}
-      @keyframes scrollUp {{
-        0% {{ transform: translateY(0); }}
-        100% {{ transform: translateY(-50%); }}
-      }}
-    </style>
-    <div class="wall-wrap"><div class="wall-scroll">{''.join(cards + cards)}</div></div>
-    """
-    components.html(html, height=440)
+        source_name = item.get("source_name") or "未知消息源"
+        grouped.setdefault(source_name, []).append(item)
+    return grouped
 
 
 def render_generated_content(content: dict) -> str:
@@ -212,12 +186,30 @@ st.caption("聚合 Web3 / Crypto 新闻、Google News、可选 X 与 LunarCrush 
 
 refresh_seconds = int(os.getenv("WEB3_HOT_REFRESH_SECONDS", "60") or 60)
 auto_refresh = st.toggle("自动刷新页面", value=True)
-if auto_refresh:
-    components.html(f"<script>setTimeout(() => window.parent.location.reload(), {refresh_seconds * 1000});</script>", height=0)
+
+
+@st.fragment(run_every=refresh_seconds if auto_refresh else None)
+def schedule_session_safe_refresh() -> None:
+    if not auto_refresh:
+        st.session_state.pop("web3_hot_last_app_refresh", None)
+        return
+
+    now = time.monotonic()
+    last_refresh = st.session_state.get("web3_hot_last_app_refresh")
+    if last_refresh is None:
+        st.session_state.web3_hot_last_app_refresh = now
+        return
+    if now - last_refresh >= max(refresh_seconds - 1, 1):
+        st.session_state.web3_hot_last_app_refresh = now
+        st.rerun(scope="app")
+
+
+schedule_session_safe_refresh()
 
 st.session_state.setdefault("web3_hot_items", [])
 st.session_state.setdefault("web3_hot_selected_id", None)
 st.session_state.setdefault("web3_hot_generated", None)
+st.session_state.setdefault("web3_x_posts_script", "")
 
 try:
     stats = api_request("GET", "/api/web3-hot/stats")
@@ -233,6 +225,62 @@ top_cols[3].metric("Red", stats.get("red_count", 0))
 top_cols[4].metric("Yellow", stats.get("yellow_count", 0))
 top_cols[5].metric("启用源", stats.get("enabled_source_count", 0))
 top_cols[6].metric("X/LC", f"{'X' if stats.get('x_configured') else '-'} / {'LC' if stats.get('lunarcrush_configured') else '-'}")
+
+st.divider()
+with st.expander("粘贴 X 消息生成文案", expanded=False):
+    x_post_count = int(st.number_input("X 消息数量", min_value=1, max_value=20, value=1, step=1))
+    x_posts = [
+        st.text_area(
+            f"X 消息 {index}",
+            key=f"manual_x_post_{index}",
+            height=120,
+            placeholder="粘贴 X 帖子正文，也可同时包含作者、时间和链接",
+        )
+        for index in range(1, x_post_count + 1)
+    ]
+
+    x_gen_cols = st.columns([1, 1, 2])
+    with x_gen_cols[0]:
+        x_platform = st.selectbox("目标平台", PLATFORMS, key="manual_x_platform")
+    with x_gen_cols[1]:
+        x_duration = st.selectbox("视频时长", DURATIONS, index=2, key="manual_x_duration")
+    with x_gen_cols[2]:
+        x_instruction = st.text_input(
+            "补充要求",
+            key="manual_x_instruction",
+            placeholder="例如：强调消息之间的冲突，保持中立",
+        )
+
+    if st.button("根据 X 消息生成文案", type="primary", key="generate_manual_x_script"):
+        normalized_x_posts = [post.strip() for post in x_posts if post.strip()]
+        if not normalized_x_posts:
+            st.warning("请至少输入一条 X 消息")
+        else:
+            with st.spinner("正在综合 X 消息并生成文案..."):
+                try:
+                    result = api_request(
+                        "POST",
+                        "/api/web3-hot/generate-from-x-posts",
+                        {
+                            "posts": normalized_x_posts,
+                            "target_platform": x_platform,
+                            "duration": x_duration,
+                            "user_instruction": x_instruction,
+                        },
+                    )
+                    st.session_state.web3_x_posts_script = result.get("script", "")
+                except Exception as exc:
+                    st.error(f"生成失败：{exc}")
+
+    if st.session_state.web3_x_posts_script:
+        st.text_area("X 消息文案", st.session_state.web3_x_posts_script, height=520)
+        st.download_button(
+            "下载文案",
+            st.session_state.web3_x_posts_script,
+            file_name="x_posts_script.txt",
+            mime="text/plain",
+            key="download_manual_x_script",
+        )
 
 st.divider()
 st.subheader("抓取与筛选")
@@ -296,43 +344,39 @@ if not st.session_state.web3_hot_items:
         st.session_state.web3_hot_items = []
 
 items = st.session_state.web3_hot_items
-try:
-    ticker_items = api_request("GET", "/api/web3-hot/ticker", params={"limit": 15})["items"]
-except Exception:
-    ticker_items = items[:15]
 
 st.divider()
-st.subheader("滚动消息墙")
-if ticker_items:
-    render_ticker(ticker_items)
-else:
-    st.info("暂无热点。点击“立即刷新”抓取最新 Web3 消息。")
-
-st.divider()
-st.subheader(f"热点列表（{len(items)} 条）")
+grouped_items = group_items_by_source(items)
+st.subheader(f"按消息源展示（{len(grouped_items)} 个消息源，{len(items)} 条消息）")
 if not items:
-    st.info("暂无数据。")
+    st.info("暂无热点。点击“立即刷新”抓取最新 Web3 消息。")
 else:
-    for index, item in enumerate(items, start=1):
-        with st.container():
-            cols = st.columns([0.5, 0.9, 0.9, 1.2, 3.6, 1.4, 1.3])
-            cols[0].write(index)
-            cols[1].markdown(f"<span style='{badge_style(item.get('heat_level', 'gray'))}border-radius:999px;padding:2px 8px'>{item.get('heat_level')}</span>", unsafe_allow_html=True)
-            cols[2].write(item.get("trend_status"))
-            cols[3].write(f"{item.get('heat_score', 0):.1f}")
-            cols[4].markdown(f"**{item.get('title')}**")
-            cols[4].caption(" ".join(item.get("matched_keywords") or []))
-            cols[5].write(item.get("source_name"))
-            cols[6].write(format_time(item.get("published_at")))
-            action_cols = st.columns([1, 1, 1, 5])
-            if action_cols[0].button("查看详情", key=f"hot_detail_{item['id']}"):
-                st.session_state.web3_hot_selected_id = item["id"]
-            if action_cols[1].button("生成视频内容", key=f"hot_generate_select_{item['id']}"):
-                st.session_state.web3_hot_selected_id = item["id"]
-                st.session_state.web3_hot_generated = None
-            if item.get("link"):
-                action_cols[2].link_button("来源", item["link"])
-            st.divider()
+    for source_name, source_items in grouped_items.items():
+        with st.expander(f"{source_name}（{len(source_items)} 条）", expanded=True):
+            for source_index, item in enumerate(source_items, start=1):
+                cols = st.columns([0.45, 0.85, 0.85, 0.9, 4.6, 1.3])
+                cols[0].write(source_index)
+                cols[1].markdown(
+                    f"<span style='{badge_style(item.get('heat_level', 'gray'))}border-radius:999px;padding:2px 8px'>"
+                    f"{item.get('heat_level')}</span>",
+                    unsafe_allow_html=True,
+                )
+                cols[2].write(item.get("trend_status"))
+                cols[3].write(f"{item.get('heat_score', 0):.1f}")
+                cols[4].markdown(f"**{item.get('title')}**")
+                cols[4].caption(" ".join(item.get("matched_keywords") or []))
+                cols[5].write(format_time(item.get("published_at")))
+
+                item_actions = st.columns([1, 1.2, 0.8, 5])
+                if item_actions[0].button("查看详情", key=f"hot_detail_{item['id']}"):
+                    st.session_state.web3_hot_selected_id = item["id"]
+                if item_actions[1].button("生成视频内容", key=f"hot_generate_select_{item['id']}"):
+                    st.session_state.web3_hot_selected_id = item["id"]
+                    st.session_state.web3_hot_generated = None
+                if item.get("link"):
+                    item_actions[2].link_button("来源", item["link"])
+                if source_index < len(source_items):
+                    st.divider()
 
 selected_id = st.session_state.web3_hot_selected_id
 if selected_id:
