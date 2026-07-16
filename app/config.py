@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     web3_hot_max_items_per_source: int = 50
     x_bearer_token: str = ""
     lunarcrush_api_key: str = ""
+    auth_session_days: int = 7
 
 
 @lru_cache

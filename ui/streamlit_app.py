@@ -15,6 +15,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from ui.auth import auth_headers, require_login
+
 try:
     STREAMLIT_SECRETS = dict(st.secrets)
 except Exception:
@@ -229,6 +231,7 @@ DURATION_LABELS = {
 
 
 st.set_page_config(page_title="RSS Video Agent", page_icon="RSS", layout="wide")
+require_login()
 
 
 @st.cache_resource
@@ -303,7 +306,7 @@ def api_get(path: str, params: Optional[dict] = None) -> dict:
     if not USE_REMOTE_API:
         return direct_call(path, params=params)
     with httpx.Client(timeout=60) as client:
-        response = client.get(f"{API_BASE}{path}", params=params)
+        response = client.get(f"{API_BASE}{path}", params=params, headers=auth_headers())
         response.raise_for_status()
         return response.json()
 
@@ -312,7 +315,7 @@ def api_post(path: str, payload: Optional[dict] = None) -> dict:
     if not USE_REMOTE_API:
         return direct_call(path, payload=payload or {})
     with httpx.Client(timeout=120) as client:
-        response = client.post(f"{API_BASE}{path}", json=payload or {})
+        response = client.post(f"{API_BASE}{path}", json=payload or {}, headers=auth_headers())
         response.raise_for_status()
         return response.json()
 

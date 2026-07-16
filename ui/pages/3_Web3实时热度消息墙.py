@@ -16,6 +16,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from ui.auth import auth_headers, require_login
+
 try:
     STREAMLIT_SECRETS = dict(st.secrets)
 except Exception:
@@ -119,7 +121,7 @@ def api_request(method: str, path: str, payload: Optional[dict] = None, params: 
     if not USE_REMOTE_API:
         return direct_call(method, path, payload, params)
     with httpx.Client(timeout=180) as client:
-        response = client.request(method, f"{API_BASE}{path}", json=payload, params=params)
+        response = client.request(method, f"{API_BASE}{path}", json=payload, params=params, headers=auth_headers())
         response.raise_for_status()
         return response.json()
 
@@ -204,6 +206,7 @@ def render_generated_content(content: dict) -> str:
 
 
 st.set_page_config(page_title="Web3 实时热度消息墙", page_icon="🔥", layout="wide")
+require_login()
 st.title("Web3 实时热度消息墙")
 st.caption("聚合 Web3 / Crypto 新闻、Google News、可选 X 与 LunarCrush 信号，按热度排序展示正在发酵的消息。")
 

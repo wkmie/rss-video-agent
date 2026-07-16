@@ -15,6 +15,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from ui.auth import auth_headers, require_login
+
 try:
     STREAMLIT_SECRETS = dict(st.secrets)
 except Exception:
@@ -116,7 +118,7 @@ def api_request(method: str, path: str, payload: Optional[dict] = None, params: 
     if not USE_REMOTE_API:
         return direct_call(method, path, payload, params)
     with httpx.Client(timeout=120) as client:
-        response = client.request(method, f"{API_BASE}{path}", json=payload, params=params)
+        response = client.request(method, f"{API_BASE}{path}", json=payload, params=params, headers=auth_headers())
         response.raise_for_status()
         return response.json()
 
@@ -159,6 +161,7 @@ def render_topic(topic: dict) -> str:
 
 
 st.set_page_config(page_title="自动事前选题", page_icon="📅", layout="wide")
+require_login()
 st.title("自动事前选题")
 st.caption("从互联网自动抓取未来重要事件，并生成适合 KOL 提前发布的视频内容。")
 

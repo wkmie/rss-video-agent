@@ -10,6 +10,8 @@
 - 按分类、关键词、时间范围筛选消息
 - 用规则评分输出短视频选题池
 - 可调用 OpenAI 兼容 API 做选题分析和视频文案生成
+- 交易认知模块：从“尼克｜交易性格”公开内容蒸馏知识源中检索相关认知，再按用户问题生成标题、标签和口播文案
+- 用户账号：支持注册、登录、退出和修改密码，业务页面与 API 均需要登录
 - 自动事前选题：从互联网抓取未来宏观、Web3、Token 解锁、AI 科技、监管和网络安全事件，并生成提前发布的视频内容包
 - 没有配置 API Key 时，也能使用规则版降级文案跑通流程
 - 预留 `data/imports/` 目录，后续可导入平台热点 CSV
@@ -39,6 +41,7 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-4.1-mini
 
 DATABASE_URL=sqlite:///./rss_video_agent.db
+AUTH_SESSION_DAYS=7
 
 RSS_MAX_ARTICLES_PER_SOURCE=10
 RSS_TIMEOUT_SECONDS=15
@@ -55,6 +58,19 @@ PRE_EVENT_MIN_IMPORTANCE=medium
 ```
 
 如果不填 `OPENAI_API_KEY`，系统会使用本地规则版分析和文案模板，不会调用大模型。
+
+## 用户登录
+
+首次打开 Streamlit 页面时，需要先注册账号。注册成功后会自动登录，登录后可以在左侧边栏修改密码或退出登录。
+
+- 用户名：3-32 位字母、数字或下划线
+- 密码：至少 8 位，并同时包含字母和数字
+- 登录方式：支持用户名或邮箱
+- 会话有效期：默认 7 天，可通过 `AUTH_SESSION_DAYS` 调整
+- 密码使用 PBKDF2 加盐哈希保存，数据库不会保存明文密码
+- 修改密码后，原有登录会话会立即失效
+
+使用独立 FastAPI 时，前端会通过 Bearer Token 调用受保护接口；Streamlit 直接运行模式也使用同一套账号和会话数据表。
 
 事前事件源中，Trading Economics、Finnhub、CoinMarketCal、Token Unlocks、Messari 需要 API Key。Google News RSS 兜底搜索、Microsoft Patch Tuesday 规则事件等不需要 API Key。缺少某个 API Key 时，系统会在前端提示并跳过该 API 源，不会影响其他事件源抓取。
 
@@ -140,6 +156,18 @@ API_BASE_URL=http://127.0.0.1:8000 streamlit run ui/streamlit_app.py
 2. 输入主题。
 3. 选择视频时长和平台。
 4. 点击“生成主题文案”。
+
+方式三：交易认知问答
+
+1. 在左侧导航打开与“Web3实时热度消息墙”并列的“交易认知”页面。
+2. 输入问题，例如“交易为什么要设置止损？”。
+3. 选择平台和视频时长。
+4. 点击“生成交易认知文案”。
+5. 页面会同时展示内容包和本次采用的认知依据。
+
+交易认知模块位于 `app/trading_cognition/`，是独立于 RSS 新闻源的本地知识源。它先通过关键词和中文片段匹配检索相关认知卡片，再把命中的核心判断、论证路径和行动规则交给模型。关闭“使用大模型生成”后，可使用本地规则版完成链路验证。
+
+该模块只生成交易认知、交易心理、复盘和风险管理内容，不提供具体品种、点位、买卖信号、仓位比例或收益承诺，生成内容不构成投资建议。
 
 输出包含：
 
